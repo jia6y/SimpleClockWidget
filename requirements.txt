@@ -1,2 +1,4 @@
 comtypes==1.1.14
 pycaw==20230407
+pynput==1.7.7
+six==1.16.0

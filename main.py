@@ -5,6 +5,7 @@ from ctypes import cast, POINTER
 from comtypes import CLSCTX_ALL
 from pycaw.pycaw import AudioUtilities, IAudioEndpointVolume
 import colorsys
+from pynput import keyboard
 
 class FancyClock(tk.Tk):
     def __init__(self):
@@ -23,6 +24,7 @@ class FancyClock(tk.Tk):
         self.create_widgets()
         self.bind_events()
         self.setup_volume_control()
+        self.setup_global_hotkeys()        
         self.animation_frame = 0
 
     def create_widgets(self):
@@ -69,7 +71,7 @@ class FancyClock(tk.Tk):
                 x1, y1 = 0, height - (i - width * 2 - height)
                 x2, y2 = 0, height - (i - width * 2 - height) - 1
             
-            item = self.canvas.create_line(x1 + 1, y1 + 1, x2 + 1, y2 + 1, fill='white', width=1)
+            item = self.canvas.create_line(x1 + 1, y1 + 1, x2 + 1, y2 + 1, fill='white', width=2)
             border_items.append(item)
         return border_items
 
@@ -87,8 +89,8 @@ class FancyClock(tk.Tk):
         self.bind('<ButtonRelease-1>', self.stop_move)
         self.bind('<B1-Motion>', self.do_move)
         self.bind('<F10>', self.toggle_mute)
-        self.bind('<F11>', self.increase_volume)
-        self.bind('<F12>', self.decrease_volume)
+        self.bind('<F12>', self.increase_volume)
+        self.bind('<F11>', self.decrease_volume)
 
     def setup_volume_control(self):
         devices = AudioUtilities.GetSpeakers()
@@ -96,18 +98,26 @@ class FancyClock(tk.Tk):
         self.volume = cast(interface, POINTER(IAudioEndpointVolume))
         self.update_volume_display()
 
-    def toggle_mute(self, event):
+    def setup_global_hotkeys(self):
+        self.listener = keyboard.GlobalHotKeys({
+            '<f10>': self.toggle_mute,
+            '<f11>': self.decrease_volume,
+            '<f12>': self.increase_volume
+        })
+        self.listener.start()
+
+    def toggle_mute(self):
         mute_state = self.volume.GetMute()
         self.volume.SetMute(not mute_state, None)
         self.update_volume_display()
 
-    def increase_volume(self, event):
+    def increase_volume(self):
         current_volume = self.volume.GetMasterVolumeLevelScalar()
         new_volume = min(1.0, current_volume + 0.05)
         self.volume.SetMasterVolumeLevelScalar(new_volume, None)
         self.update_volume_display()
 
-    def decrease_volume(self, event):
+    def decrease_volume(self):
         current_volume = self.volume.GetMasterVolumeLevelScalar()
         new_volume = max(0.0, current_volume - 0.05)
         self.volume.SetMasterVolumeLevelScalar(new_volume, None)
